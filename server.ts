@@ -145,7 +145,7 @@ export type AccountSummary = { text: string; displayName: string; avatar: string
 async function getUserPosts(account: string, session: BskySession): Promise<AccountSummary | null> {
     const url = new URL("https://bsky.social/xrpc/app.bsky.feed.getAuthorFeed");
     url.searchParams.append("actor", account.replaceAll("@", ""));
-    url.searchParams.append("limit", (100).toString());
+    url.searchParams.append("limit", (75).toString());
 
     const response = await fetch(url.toString(), {
         method: "GET",

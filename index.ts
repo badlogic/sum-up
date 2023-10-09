@@ -51,7 +51,7 @@ export class App extends LitElement {
             <div class="flex">
                 <input
                     id="input"
-                    class="flex-1 border rounded-l px-2 py-1"
+                    class="flex-1 border rounded-l px-2 py-1 min-w-[300px]"
                     placeholder="Bluesky handle, e.g. badlogic.bsky.social"
                     value="${this.account || nothing}"
                 />

@@ -688,6 +688,10 @@ html,
   width: 100%;
 }
 
+.min-w-\[300px\] {
+  min-width: 300px;
+}
+
 .max-w-\[150px\] {
   max-width: 150px;
 }
@@ -828,6 +832,10 @@ html,
 
 .underline {
   text-decoration-line: underline;
+}
+
+.overline {
+  text-decoration-line: overline;
 }
 
 .antialiased {
