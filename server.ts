@@ -107,7 +107,7 @@ async function createSession(accountName: string, password: string): Promise<Bsk
 
 async function getSummary(userText: string, displayName: string): Promise<string> {
     const prompt = `
-    summarize this bluesky user's posts in a humorous way. the summary should be at least 6 paragraphs long. use sarcasm to spice things up. it's ok to be sarcastically negative, but do not be mean. their display name is ${displayName}.`;
+    summarize this bluesky user's posts in a humorous way. the summary should be at least 6 paragraphs long. don't make it a direct summary, but make the summary kind of about the person themselves. use sarcasm to spice things up. it's ok to be sarcastically negative, but do not be mean. their display name is ${displayName}.`;
     try {
         const chatCompletion = await openai.chat.completions.create({
             messages: [{ role: "user", content: prompt + "\n\n" + userText }],
