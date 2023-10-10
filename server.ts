@@ -43,9 +43,10 @@ const openai = new OpenAI({
     app.use(compression());
     app.use(json());
     app.use(express.static("site"));
-    app.get("/api/summarize/:accountName", async (req, res) => {
+    app.get("/api/summarize/:accountName/:clear?", async (req, res) => {
         const account = req.params.accountName;
         console.log(`Summarizing account ${account}`);
+        if (req.params.clear) cache.delete(account);
         if (cache.has(account)) {
             res.json(cache.get(account));
             return;
@@ -107,7 +108,7 @@ async function createSession(accountName: string, password: string): Promise<Bsk
 
 async function getSummary(userText: string, displayName: string): Promise<string> {
     const prompt = `
-    summarize this bluesky user's posts in a humorous but not mean way. the summary should be at least 6 paragraphs long. be creative. use a little banter. do not be mean, neither to the user nor any other people they mention. finish by rating the timeline along a random dimension that will sound funny. be nice about it. their display name is ${displayName}.`;
+    summarize this bluesky user's posts in a humorous way. the summary should be at least 6 paragraphs long. be creative. do not be mean, neither to the user nor any other people they mention. finish by rating the timeline along a random dimension that will sound funny. be nice about it. their display name is ${displayName}.`;
     try {
         const chatCompletion = await openai.chat.completions.create({
             messages: [{ role: "user", content: prompt + "\n\n" + userText }],

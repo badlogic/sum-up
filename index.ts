@@ -51,7 +51,7 @@ export class App extends LitElement {
             <div class="flex">
                 <input
                     id="input"
-                    class="flex-1 border rounded-l px-2 py-1 min-w-[300px]"
+                    class="flex-1 border rounded-l px-2 py-1 min-w-[250px]"
                     placeholder="Bluesky handle, e.g. badlogic.bsky.social"
                     value="${this.account || nothing}"
                 />
@@ -69,9 +69,9 @@ export class App extends LitElement {
                 ? html`<div class="text-bold text-2xl">${this.displayName}</div>
                       <a class="mb-4 font-bold text-primary text-center" href="${location.href}">Share</a>`
                 : nothing}
-            ${this.message ? html`<div>${unsafeHTML(this.message)}</div>` : nothing}
+            ${this.message ? html`<div class="px-4">${unsafeHTML(this.message)}</div>` : nothing}
             <div class="flex-1"></div>
-            <div class="text-center italic mt-4">
+            <div class="text-center italic my-4">
                 Lovingly made by <a class="text-primary" href="https://bsky.app/profile/badlogic.bsky.social">Mario Zechner</a><br />
                 No data is collected, not even your IP address.
                 <a class="text-primary" href="https://github.com/badlogic/sum-up"><br />Source code</a>

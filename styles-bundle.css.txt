@@ -692,6 +692,14 @@ html,
   min-width: 300px;
 }
 
+.min-w-\[200px\] {
+  min-width: 200px;
+}
+
+.min-w-\[250px\] {
+  min-width: 250px;
+}
+
 .max-w-\[150px\] {
   max-width: 150px;
 }
