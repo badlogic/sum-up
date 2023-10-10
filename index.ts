@@ -35,6 +35,9 @@ export class App extends LitElement {
 
     account: string | null;
 
+    @state()
+    copiedToClipboard = false;
+
     constructor() {
         super();
         this.account = new URL(window.location.href).searchParams.get("account");
@@ -47,7 +50,7 @@ export class App extends LitElement {
     render() {
         return html` <div class="flex flex-col items-center max-w-[600px] m-auto">
             <a class="text-center text-primary font-bold text-2xl my-4" href="/">Sum-up</a>
-            <div class="text-center mb-4">See what ChatGPT thinks of your Bluesky feed</div>
+            <div class="text-center mb-4">See what ChatGPT thinks of your Bluesky feed<br />Summaries are updated once a day</div>
             <div class="flex">
                 <input
                     id="input"
@@ -67,7 +70,9 @@ export class App extends LitElement {
             ${this.avatar ? html`<img class="my-4 rounded-full max-w-[150px] max-h-[150px]" src="${this.avatar}" />` : nothing}
             ${this.displayName
                 ? html`<div class="text-bold text-2xl">${this.displayName}</div>
-                      <a class="mb-4 font-bold text-primary text-center" href="${location.href}">Share</a>`
+                      <div class="mb-4 font-bold text-primary text-center cursor-pointer" @click=${() => this.copyToClipboard(location.href)}>
+                          ${this.copiedToClipboard ? "Copied link to clipboard" : "Share"}
+                      </div>`
                 : nothing}
             ${this.message ? html`<div class="px-4">${unsafeHTML(this.message)}</div>` : nothing}
             <div class="flex-1"></div>
@@ -112,5 +117,22 @@ export class App extends LitElement {
         this.input!.disabled = false;
         this.load!.disabled = false;
         this.loading = false;
+    }
+
+    copyToClipboard(text: string) {
+        const input = document.createElement("input");
+        input.value = text;
+
+        document.body.appendChild(input);
+        input.select();
+
+        try {
+            document.execCommand("copy");
+            this.copiedToClipboard = true;
+        } catch (err) {
+            this.copiedToClipboard = false;
+        } finally {
+            document.body.removeChild(input);
+        }
     }
 }

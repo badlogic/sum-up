@@ -688,14 +688,6 @@ html,
   width: 100%;
 }
 
-.min-w-\[300px\] {
-  min-width: 300px;
-}
-
-.min-w-\[200px\] {
-  min-width: 200px;
-}
-
 .min-w-\[250px\] {
   min-width: 250px;
 }
@@ -726,6 +718,10 @@ html,
 
 .transform {
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
+}
+
+.cursor-pointer {
+  cursor: pointer;
 }
 
 .resize {

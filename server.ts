@@ -38,6 +38,11 @@ const openai = new OpenAI({
     const session = await createSession(blueskyAccount, blueskyPassword);
     if (!session) process.exit(-1);
 
+    const interval = setInterval(() => {
+        cache.clear();
+        console.log("Cleared cache");
+    }, 24 * 60 * 60 * 1000);
+
     const app = express();
     app.use(cors());
     app.use(compression());
@@ -108,13 +113,19 @@ async function createSession(accountName: string, password: string): Promise<Bsk
 
 async function getSummary(userText: string, displayName: string): Promise<string> {
     const prompt = `
-    summarize this bluesky user's posts in a humorous way. the summary should be at least 6 paragraphs long. be creative. do not be mean, neither to the user nor any other people they mention. finish by rating the timeline along a random dimension that will sound funny. be nice about it. their display name is ${displayName}.`;
+    overall task: summarize this bluesky user's posts, either in a serious or in a funny tone. You must honor these rules:
+    * use a funny yet inoffensive writing style for the summary
+    * do not be mean, neither to the user nor any other people they mention
+    * do not make fun of political or societal issues
+    * the summary should be at least 6 paragraphs long
+    * use their display name ${displayName}`;
     try {
         const chatCompletion = await openai.chat.completions.create({
             messages: [{ role: "user", content: prompt + "\n\n" + userText }],
             model: "gpt-3.5-turbo",
             temperature: 0.8,
         });
+        console.log("Got summary for " + displayName);
         return chatCompletion.choices[0].message.content!;
     } catch (error) {
         console.error("Error generating response:", error);
@@ -160,5 +171,6 @@ async function getUserPosts(account: string, session: BskySession): Promise<Acco
     const feed = (await response.json()) as BskyFeed;
     feed.feed = feed.feed.filter((post) => post.post.author.handle == account && !post.reason);
     const text = feed.feed.map((post) => post.post.record.text).join(" ");
+    console.log("Got user posts for " + account);
     return { text, displayName: feed.feed[0].post.author.displayName, avatar: feed.feed[0].post.author.avatar };
 }
