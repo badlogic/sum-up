@@ -107,12 +107,12 @@ async function createSession(accountName: string, password: string): Promise<Bsk
 
 async function getSummary(userText: string, displayName: string): Promise<string> {
     const prompt = `
-    summarize this bluesky user's posts in a humorous way. the summary should be at least 6 paragraphs long. don't make it a direct summary, but make the summary kind of about the person themselves. use sarcasm to spice things up. it's ok to be sarcastically negative, but do not be mean. their display name is ${displayName}.`;
+    summarize this bluesky user's posts in a cheerful, humorous way. the summary should be at least 6 paragraphs long. be creative. use a little banter. do not be mean, neither to the user nor any other people they mention. finish by rating the timeline along a random dimension that will sound funny. be nice about it. their display name is ${displayName}.`;
     try {
         const chatCompletion = await openai.chat.completions.create({
             messages: [{ role: "user", content: prompt + "\n\n" + userText }],
             model: "gpt-3.5-turbo",
-            temperature: 0.7,
+            temperature: 0.8,
         });
         return chatCompletion.choices[0].message.content!;
     } catch (error) {
@@ -138,6 +138,7 @@ export type BskyPost = {
             text: string;
         };
     };
+    reason?: any;
 };
 
 export type AccountSummary = { text: string; displayName: string; avatar: string };
@@ -156,9 +157,7 @@ async function getUserPosts(account: string, session: BskySession): Promise<Acco
     });
     if (response.status != 200) return null;
     const feed = (await response.json()) as BskyFeed;
-    const text = feed.feed
-        .filter((post) => post.post.author.handle == account)
-        .map((post) => post.post.record.text)
-        .join(" ");
+    feed.feed = feed.feed.filter((post) => post.post.author.handle == account && !post.reason);
+    const text = feed.feed.map((post) => post.post.record.text).join(" ");
     return { text, displayName: feed.feed[0].post.author.displayName, avatar: feed.feed[0].post.author.avatar };
 }
