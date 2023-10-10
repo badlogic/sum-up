@@ -68,7 +68,7 @@ const openai = new OpenAI({
             cache.set(account, result);
             res.json({ accountSummary, gptSummary });
         } catch (e) {
-            console.log(`Error ${JSON.stringify(e, null, 2)}`);
+            console.error(`Error`, e);
             res.status(400);
         }
     });
@@ -157,21 +157,26 @@ export type BskyPost = {
 export type AccountSummary = { text: string; displayName: string; avatar: string };
 
 async function getUserPosts(account: string, session: BskySession): Promise<AccountSummary | null> {
-    account = account.replaceAll("@", "");
-    const url = new URL("https://bsky.social/xrpc/app.bsky.feed.getAuthorFeed");
-    url.searchParams.append("actor", account);
-    url.searchParams.append("limit", (75).toString());
+    try {
+        account = account.replaceAll("@", "");
+        const url = new URL("https://bsky.social/xrpc/app.bsky.feed.getAuthorFeed");
+        url.searchParams.append("actor", account);
+        url.searchParams.append("limit", (75).toString());
 
-    const response = await fetch(url.toString(), {
-        method: "GET",
-        headers: {
-            Authorization: `Bearer ${session.accessJwt}`,
-        },
-    });
-    if (response.status != 200) return null;
-    const feed = (await response.json()) as BskyFeed;
-    feed.feed = feed.feed.filter((post) => post.post.author.handle == account && !post.reason);
-    const text = feed.feed.map((post) => post.post.record.text).join(" ");
-    console.log("Got user posts for " + account);
-    return { text, displayName: feed.feed[0].post.author.displayName, avatar: feed.feed[0].post.author.avatar };
+        const response = await fetch(url.toString(), {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${session.accessJwt}`,
+            },
+        });
+        if (response.status != 200) return null;
+        const feed = (await response.json()) as BskyFeed;
+        feed.feed = feed.feed.filter((post) => post.post.author.handle == account && !post.reason);
+        const text = feed.feed.map((post) => post.post.record.text).join(" ");
+        console.log("Got user posts for " + account);
+        return { text, displayName: feed.feed[0].post.author.displayName, avatar: feed.feed[0].post.author.avatar };
+    } catch (e) {
+        console.error("Error fetching posts for " + account, e);
+        return null;
+    }
 }
