@@ -114,10 +114,11 @@ async function createSession(accountName: string, password: string): Promise<Bsk
 async function getSummary(userText: string, displayName: string): Promise<string> {
     const prompt = `
     overall task: summarize this bluesky user's posts, either in a serious or in a funny tone. You must honor these rules:
-    * use a funny yet inoffensive writing style for the summary
-    * do not be mean, neither to the user nor any other people they mention
-    * do not make fun of political or societal issues
     * the summary should be at least 6 paragraphs long
+    * use a funny writing style for the summary
+    * end the summary with a rating for the user that is funny
+    * do not ridicule the user or insinuate that they are clueless. this is very important.
+    * do not ridicule political, societal, or personal issues. this is very important.
     * use their display name ${displayName}`;
     try {
         const chatCompletion = await openai.chat.completions.create({
