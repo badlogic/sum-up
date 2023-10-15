@@ -30,15 +30,25 @@ const openai = new OpenAI({
     apiKey: openAiKey,
 });
 
+let session: BskySession | null = null;
+
 (async () => {
     console.log(`OpenAI key: ${openAiKey}`);
     console.log(`BlueSky account: ${blueskyAccount}`);
     console.log(`BlueSky password: ${blueskyPassword}`);
 
-    const session = await createSession(blueskyAccount, blueskyPassword);
+    session = await createSession(blueskyAccount, blueskyPassword);
     if (!session) process.exit(-1);
 
-    const interval = setInterval(() => {
+    setInterval(async () => {
+        session = await createSession(blueskyAccount, blueskyPassword);
+        if (!session) {
+            console.log("Couldn't recreate session");
+            process.exit(-1);
+        }
+    }, 60 * 60 * 1000);
+
+    setInterval(() => {
         cache.clear();
         console.log("Cleared cache");
     }, 24 * 60 * 60 * 1000);
@@ -48,28 +58,36 @@ const openai = new OpenAI({
     app.use(compression());
     app.use(json());
     app.use(express.static("site"));
-    app.get("/api/summarize/:accountName/:clear?", async (req, res) => {
+    app.get("/api/clear/:accountName", async (req, res) => {
         const account = req.params.accountName;
-        console.log(`Summarizing account ${account}`);
-        if (req.params.clear) cache.delete(account);
-        if (cache.has(account)) {
-            res.json(cache.get(account));
+        cache.delete(account);
+    });
+    app.get("/api/summarize/:accountName", async (req, res) => {
+        const account = req.params.accountName;
+        let type = (req.query.type as string) || "funny";
+        let style = (req.query.style as string) || null;
+        const key = account + "|" + type + "|" + style;
+
+        console.log(`Summarizing account ${key}`);
+        if (cache.has(key)) {
+            console.log("Using cached summary for " + key);
+            res.json(cache.get(key));
             return;
         }
 
         try {
-            const accountSummary = await getUserPosts(account, session);
+            const accountSummary = await getUserPosts(account, session!);
             if (!accountSummary) {
-                res.status(400);
+                res.status(400).json({ error: "Account summary not found" });
                 return;
             }
-            const gptSummary = await getSummary(accountSummary.text, accountSummary.displayName);
+            const gptSummary = await getSummary(accountSummary.text, accountSummary.displayName, type, style); // Pass "type" as the third argument
             const result = { accountSummary, gptSummary };
-            cache.set(account, result);
+            cache.set(key, result);
             res.json({ accountSummary, gptSummary });
         } catch (e) {
             console.error(`Error`, e);
-            res.status(400);
+            res.status(400).json({ error: "An error occurred while processing the request" });
         }
     });
 
@@ -111,15 +129,36 @@ async function createSession(accountName: string, password: string): Promise<Bsk
     }
 }
 
-async function getSummary(userText: string, displayName: string): Promise<string> {
-    const prompt = `
-    overall task: summarize this bluesky user's posts, either in a serious or in a funny tone. You must honor these rules:
+async function getSummary(userText: string, displayName: string, type: string, style: string | null): Promise<string> {
+    style = style?.trim() ?? "";
+    style = style && style.length > 0 ? `* The most important rule: you MUST write in the style of ${style}.` : "";
+    const prompts: Record<string, string> = {
+        funny: `
+    summarize this bluesky user's posts. You must honor these rules:
+    ${style}
     * the summary should be at least 6 paragraphs long
-    * use a funny writing style for the summary
+    * use a super funny and possibly sarcastic writing style for the summary. this is very important.
     * end the summary with a rating for the user that is funny
     * do not ridicule the user or insinuate that they are clueless. this is very important.
     * do not ridicule political, societal, or personal issues. this is very important.
-    * use their display name ${displayName}`;
+    * use their display name ${displayName}
+
+    Here are the posts, delimited by "|": `,
+        serious: `
+    summarize this bluesky user's posts. You must honor these rules:
+    ${style}
+    * the summary should be at least 6 paragraphs long
+    * use a serious writing style for the summary
+    * end the summary by summarizing what topics other users will find in this users timeline.
+    * do not ridicule the user or insinuate that they are clueless. this is very important.
+    * do not ridicule political, societal, or personal issues. this is very important.
+    * use their display name ${displayName}
+
+    Here are the posts, delimited by "|": `,
+    };
+
+    const prompt = prompts[type];
+    console.log(prompt);
     try {
         const chatCompletion = await openai.chat.completions.create({
             messages: [{ role: "user", content: prompt + "\n\n" + userText }],
@@ -158,10 +197,11 @@ export type AccountSummary = { text: string; displayName: string; avatar: string
 
 async function getUserPosts(account: string, session: BskySession): Promise<AccountSummary | null> {
     try {
-        account = account.replaceAll("@", "");
+        account = account.replaceAll("@", "").toLowerCase();
+        if (!account.includes(".")) account = account + "bsky.social";
         const url = new URL("https://bsky.social/xrpc/app.bsky.feed.getAuthorFeed");
         url.searchParams.append("actor", account);
-        url.searchParams.append("limit", (75).toString());
+        url.searchParams.append("limit", (55).toString());
 
         const response = await fetch(url.toString(), {
             method: "GET",
@@ -172,7 +212,7 @@ async function getUserPosts(account: string, session: BskySession): Promise<Acco
         if (response.status != 200) return null;
         const feed = (await response.json()) as BskyFeed;
         feed.feed = feed.feed.filter((post) => post.post.author.handle == account && !post.reason);
-        const text = feed.feed.map((post) => post.post.record.text).join(" ");
+        const text = feed.feed.map((post) => post.post.record.text).join(" | ");
         console.log("Got user posts for " + account);
         return { text, displayName: feed.feed[0].post.author.displayName, avatar: feed.feed[0].post.author.avatar };
     } catch (e) {
