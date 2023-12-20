@@ -198,7 +198,7 @@ export type AccountSummary = { text: string; displayName: string; avatar: string
 async function getUserPosts(account: string, session: BskySession): Promise<AccountSummary | null> {
     try {
         account = account.replaceAll("@", "").toLowerCase();
-        if (!account.includes(".")) account = account + "bsky.social";
+        if (!account.includes(".")) account = account + ".bsky.social";
         const url = new URL("https://bsky.social/xrpc/app.bsky.feed.getAuthorFeed");
         url.searchParams.append("actor", account);
         url.searchParams.append("limit", (55).toString());
@@ -209,7 +209,7 @@ async function getUserPosts(account: string, session: BskySession): Promise<Acco
                 Authorization: `Bearer ${session.accessJwt}`,
             },
         });
-        if (response.status != 200) return null;
+        if (response.status != 200) throw new Error(await response.text());
         const feed = (await response.json()) as BskyFeed;
         feed.feed = feed.feed.filter((post) => post.post.author.handle == account && !post.reason);
         const text = feed.feed.map((post) => post.post.record.text).join(" | ");
